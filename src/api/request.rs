@@ -1,6 +1,7 @@
 use std::array::TryFromSliceError;
 use thiserror::Error;
 
+#[derive(Debug)]
 pub struct KafkaRequest {
     message_size: i32,
     request_api_key: i16,

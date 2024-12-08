@@ -12,14 +12,18 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
+                println!("Received new request");
+
                 let mut request_bytes: Vec<u8> = Vec::new();
                 stream.read_to_end(&mut request_bytes).unwrap();
                 let request = KafkaRequest::try_from(request_bytes.as_slice()).unwrap();
+                println!("Received Request: {request:?}");
 
                 let response = KafkaResponse::new(request);
+                println!("Sending Response: {response:?}");
                 let response_bytes: Vec<u8> = response.to_bytes().collect();
                 stream.write_all(&response_bytes).unwrap();
-                println!("accepted new connection");
+                println!("Sent response bytes: {response_bytes:?}");
             }
             Err(e) => {
                 println!("error: {}", e);

@@ -1,5 +1,6 @@
 use super::request::KafkaRequest;
 
+#[derive(Debug)]
 pub struct KafkaResponse {
     message_size: i32,
     correlation_id: i32
