@@ -1,6 +1,6 @@
+use crate::serialisation::ToKafkaBytes;
 use std::array::TryFromSliceError;
 use thiserror::Error;
-use crate::serialisation::ToKafkaBytes;
 
 #[derive(Debug)]
 pub struct KafkaRequest {
@@ -27,7 +27,7 @@ pub enum KafkaRequestParseError {
     #[error("Failed to parse bytes")]
     ByteParseError(#[from] TryFromSliceError),
     #[error("Invalid Api Key requested: {0}")]
-    InvalidApiKey(#[from] ParseApiKeyError)
+    InvalidApiKey(#[from] ParseApiKeyError),
 }
 
 impl TryFrom<&[u8]> for KafkaRequest {
@@ -42,8 +42,7 @@ impl TryFrom<&[u8]> for KafkaRequest {
         let message_size = i32::from_be_bytes(int_bytes.try_into()?);
 
         let (int_bytes, rest) = rest.split_at(size_of::<i16>());
-        let api_key = i16::from_be_bytes(int_bytes.try_into()?)
-            .try_into()?;
+        let api_key = i16::from_be_bytes(int_bytes.try_into()?).try_into()?;
 
         let (int_bytes, rest) = rest.split_at(size_of::<i16>());
         let api_version = i16::from_be_bytes(int_bytes.try_into()?);
@@ -55,7 +54,7 @@ impl TryFrom<&[u8]> for KafkaRequest {
             message_size,
             api_key,
             api_version,
-            correlation_id
+            correlation_id,
         })
     }
 }
@@ -64,21 +63,21 @@ impl TryFrom<&[u8]> for KafkaRequest {
 pub enum ApiKey {
     Produce,
     Fetch,
-    ApiVersions
+    ApiVersions,
 }
 
 #[derive(Error, Debug)]
 pub enum ParseApiKeyError {
     #[error("Invalid Api Key: {0}")]
-    InvalidKey(i16)
+    InvalidKey(i16),
 }
 
 impl ToKafkaBytes for ApiKey {
-    fn to_kafka_bytes(self) -> impl IntoIterator<Item=u8> {
+    fn to_kafka_bytes(self) -> impl IntoIterator<Item = u8> {
         let int_repr: i16 = match self {
             ApiKey::Produce => 0,
             ApiKey::Fetch => 1,
-            ApiKey::ApiVersions => 18
+            ApiKey::ApiVersions => 18,
         };
         int_repr.to_kafka_bytes()
     }
@@ -92,7 +91,7 @@ impl TryFrom<i16> for ApiKey {
             0 => Ok(ApiKey::Produce),
             1 => Ok(ApiKey::Fetch),
             18 => Ok(ApiKey::ApiVersions),
-            _ => Err(ParseApiKeyError::InvalidKey(value))
+            _ => Err(ParseApiKeyError::InvalidKey(value)),
         }
     }
 }

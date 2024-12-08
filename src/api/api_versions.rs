@@ -1,13 +1,13 @@
+use super::response::BaseKafkaResponse;
 use crate::api::request::{ApiKey, KafkaRequest};
 use crate::serialisation::ToKafkaBytes;
-use super::response::BaseKafkaResponse;
 
 #[derive(Debug)]
 pub struct ApiVersionsResponse {
     base_response: BaseKafkaResponse,
     error_code: ApiVersionsErrorCode,
     api_keys: Vec<ApiVersionInfo>,
-    throttle_time_ms: i32
+    throttle_time_ms: i32,
 }
 
 impl ApiVersionsResponse {
@@ -16,7 +16,7 @@ impl ApiVersionsResponse {
         let base_response = BaseKafkaResponse::new(request);
         let error_code = match request.api_version() {
             0..=4 => ApiVersionsErrorCode::NoError,
-            _ => ApiVersionsErrorCode::UnsupportedVersion
+            _ => ApiVersionsErrorCode::UnsupportedVersion,
         };
         let api_keys = match error_code {
             ApiVersionsErrorCode::UnsupportedVersion => Vec::new(),
@@ -24,21 +24,23 @@ impl ApiVersionsResponse {
             ApiVersionsErrorCode::NoError => vec![ApiVersionInfo {
                 api_key: ApiKey::ApiVersions,
                 min_version: 0,
-                max_version: 4
-            }]
+                max_version: 4,
+            }],
         };
         ApiVersionsResponse {
             base_response,
             error_code,
             api_keys,
-            throttle_time_ms: 0
+            throttle_time_ms: 0,
         }
     }
 }
 
 impl ToKafkaBytes for ApiVersionsResponse {
-    fn to_kafka_bytes(self) -> impl IntoIterator<Item=u8> {
-        self.base_response.to_kafka_bytes().into_iter()
+    fn to_kafka_bytes(self) -> impl IntoIterator<Item = u8> {
+        self.base_response
+            .to_kafka_bytes()
+            .into_iter()
             .chain(self.error_code.to_kafka_bytes())
             .chain(self.api_keys.to_kafka_bytes())
             .chain(self.throttle_time_ms.to_kafka_bytes())
@@ -55,8 +57,10 @@ pub struct ApiVersionInfo {
 }
 
 impl ToKafkaBytes for ApiVersionInfo {
-    fn to_kafka_bytes(self) -> impl IntoIterator<Item=u8> {
-        self.api_key.to_kafka_bytes().into_iter()
+    fn to_kafka_bytes(self) -> impl IntoIterator<Item = u8> {
+        self.api_key
+            .to_kafka_bytes()
+            .into_iter()
             .chain(self.min_version.to_kafka_bytes())
             .chain(self.max_version.to_kafka_bytes())
             // if we support tags in the future, then we shouldn't hardcode the number of tags as 0 here
@@ -71,10 +75,10 @@ enum ApiVersionsErrorCode {
 }
 
 impl ToKafkaBytes for ApiVersionsErrorCode {
-    fn to_kafka_bytes(self) -> impl IntoIterator<Item=u8> {
+    fn to_kafka_bytes(self) -> impl IntoIterator<Item = u8> {
         let error_code: i16 = match self {
             ApiVersionsErrorCode::NoError => 0,
-            ApiVersionsErrorCode::UnsupportedVersion => 35
+            ApiVersionsErrorCode::UnsupportedVersion => 35,
         };
         error_code.to_kafka_bytes()
     }
