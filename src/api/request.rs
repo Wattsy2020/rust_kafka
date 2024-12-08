@@ -10,6 +10,10 @@ pub struct KafkaRequest {
 }
 
 impl KafkaRequest {
+    pub fn api_version(&self) -> i16 {
+        self.request_api_version
+    }
+    
     pub fn correlation_id(&self) -> i32 {
         self.correlation_id
     }

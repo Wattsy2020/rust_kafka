@@ -7,7 +7,7 @@ pub struct KafkaResponse {
 }
 
 impl KafkaResponse {
-    pub fn new(request: KafkaRequest) -> KafkaResponse {
+    pub fn new(request: &KafkaRequest) -> KafkaResponse {
         KafkaResponse {
             message_size: 0,
             correlation_id: request.correlation_id()
