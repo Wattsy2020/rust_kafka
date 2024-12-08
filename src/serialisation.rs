@@ -4,6 +4,12 @@ pub trait ToKafkaBytes {
     fn to_kafka_bytes(self) -> impl IntoIterator<Item=u8>;
 }
 
+impl ToKafkaBytes for u8 {
+    fn to_kafka_bytes(self) -> impl IntoIterator<Item=u8> {
+        self.to_be_bytes()
+    }
+}
+
 impl ToKafkaBytes for i16 {
     fn to_kafka_bytes(self) -> impl IntoIterator<Item=u8> {
         self.to_be_bytes()
@@ -19,7 +25,9 @@ impl ToKafkaBytes for i32 {
 impl<T: ToKafkaBytes> ToKafkaBytes for Vec<T> {
     // write the length of the array as an i32, then each item in the array
     fn to_kafka_bytes(self) -> impl IntoIterator<Item=u8> {
-        let length = self.len() as i32;
+        // todo: implement proper zig zag encoding for u32
+        // make it it's own module and implement tests
+        let length = (self.len() + 1) as u8;
         let vec_as_bytes = self.into_iter().flat_map(|item| item.to_kafka_bytes());
         length
             .to_kafka_bytes()
@@ -31,7 +39,7 @@ impl<T: ToKafkaBytes> ToKafkaBytes for Vec<T> {
 /// Converts to bytes and adds the message size
 pub fn to_response_message<T: ToKafkaBytes>(response: T) -> impl Iterator<Item=u8> {
     let bytes: Vec<u8> = response.to_kafka_bytes().into_iter().collect();
-    let size = (bytes.len() + 4) as i32; // include the size of the size itself
+    let size = bytes.len() as i32;
     size
         .to_be_bytes()
         .into_iter()

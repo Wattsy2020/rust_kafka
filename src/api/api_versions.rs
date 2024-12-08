@@ -43,7 +43,7 @@ impl ToKafkaBytes for ApiVersionsResponse {
             .chain(self.api_keys.to_kafka_bytes())
             .chain(self.throttle_time_ms.to_kafka_bytes())
             // if we support tags in the future, then we shouldn't hardcode the number of tags as 0 here
-            .chain(0u8.to_be_bytes())
+            .chain(0u8.to_kafka_bytes())
     }
 }
 
@@ -60,7 +60,7 @@ impl ToKafkaBytes for ApiVersionInfo {
             .chain(self.min_version.to_kafka_bytes())
             .chain(self.max_version.to_kafka_bytes())
             // if we support tags in the future, then we shouldn't hardcode the number of tags as 0 here
-            .chain(0u8.to_be_bytes())
+            .chain(0u8.to_kafka_bytes())
     }
 }
 
