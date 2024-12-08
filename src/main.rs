@@ -2,6 +2,7 @@ use std::io::{Read, Write};
 use std::net::TcpListener;
 use codecrafters_kafka::api::api_versions::ApiVersionsResponse;
 use codecrafters_kafka::api::request::KafkaRequest;
+use codecrafters_kafka::api::response::KafkaResponse;
 
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -22,7 +23,7 @@ fn main() {
                 // assume request is an ApiVersions request
                 let response = ApiVersionsResponse::process_request(&request);
                 println!("Sending Response: {response:?}");
-                let response_bytes: Vec<u8> = response.to_bytes().collect();
+                let response_bytes: Vec<u8> = response.to_response_message().collect();
                 stream.write_all(&response_bytes).unwrap();
                 println!("Sent response bytes: {response_bytes:?}");
 
