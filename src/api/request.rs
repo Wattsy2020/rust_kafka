@@ -1,5 +1,6 @@
 use std::array::TryFromSliceError;
 use thiserror::Error;
+use crate::serialisation::ToKafkaBytes;
 
 #[derive(Debug)]
 pub struct KafkaRequest {
@@ -70,6 +71,17 @@ pub enum ApiKey {
 pub enum ParseApiKeyError {
     #[error("Invalid Api Key: {0}")]
     InvalidKey(i16)
+}
+
+impl ToKafkaBytes for ApiKey {
+    fn to_kafka_bytes(self) -> impl IntoIterator<Item=u8> {
+        let int_repr: i16 = match self {
+            ApiKey::Produce => 0,
+            ApiKey::Fetch => 1,
+            ApiKey::ApiVersions => 18
+        };
+        int_repr.to_kafka_bytes()
+    }
 }
 
 impl TryFrom<i16> for ApiKey {
