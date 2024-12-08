@@ -7,6 +7,7 @@ pub struct ApiVersionsResponse {
     base_response: BaseKafkaResponse,
     error_code: ApiVersionsErrorCode,
     api_keys: Vec<ApiVersionInfo>,
+    throttle_time_ms: i32
 }
 
 impl ApiVersionsResponse {
@@ -29,7 +30,8 @@ impl ApiVersionsResponse {
         ApiVersionsResponse {
             base_response,
             error_code,
-            api_keys
+            api_keys,
+            throttle_time_ms: 0
         }
     }
 }
@@ -39,6 +41,9 @@ impl ToKafkaBytes for ApiVersionsResponse {
         self.base_response.to_kafka_bytes().into_iter()
             .chain(self.error_code.to_kafka_bytes())
             .chain(self.api_keys.to_kafka_bytes())
+            .chain(self.throttle_time_ms.to_kafka_bytes())
+            // if we support tags in the future, then we shouldn't hardcode the number of tags as 0 here
+            .chain(0u8.to_be_bytes())
     }
 }
 
@@ -54,6 +59,8 @@ impl ToKafkaBytes for ApiVersionInfo {
         self.api_key.to_kafka_bytes().into_iter()
             .chain(self.min_version.to_kafka_bytes())
             .chain(self.max_version.to_kafka_bytes())
+            // if we support tags in the future, then we shouldn't hardcode the number of tags as 0 here
+            .chain(0u8.to_be_bytes())
     }
 }
 

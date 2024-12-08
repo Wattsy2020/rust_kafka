@@ -28,7 +28,6 @@ impl<T: ToKafkaBytes> ToKafkaBytes for Vec<T> {
     }
 }
 
-
 /// Converts to bytes and adds the message size
 pub fn to_response_message<T: ToKafkaBytes>(response: T) -> impl Iterator<Item=u8> {
     let bytes: Vec<u8> = response.to_kafka_bytes().into_iter().collect();
