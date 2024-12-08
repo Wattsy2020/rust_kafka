@@ -14,8 +14,8 @@ fn main() {
             Ok(mut stream) => {
                 println!("Received new request");
 
-                let mut request_bytes: Vec<u8> = Vec::new();
-                stream.read_to_end(&mut request_bytes).unwrap();
+                let mut request_bytes = [0; 36];
+                stream.read(&mut request_bytes).unwrap();
                 let request = KafkaRequest::try_from(request_bytes.as_slice()).unwrap();
                 println!("Received Request: {request:?}");
 
@@ -24,6 +24,11 @@ fn main() {
                 let response_bytes: Vec<u8> = response.to_bytes().collect();
                 stream.write_all(&response_bytes).unwrap();
                 println!("Sent response bytes: {response_bytes:?}");
+
+                // read all remaining bytes from the client, 
+                // so that it can finish writing and start reading our response
+                let mut ignored_bytes = Vec::new();
+                stream.read_to_end(&mut ignored_bytes).unwrap();
             }
             Err(e) => {
                 println!("error: {}", e);
