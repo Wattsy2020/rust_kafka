@@ -1,6 +1,7 @@
 use crate::serialisation::ToKafkaBytes;
-use std::array::TryFromSliceError;
+use std::io::{BufReader, Read};
 use thiserror::Error;
+use crate::api::request::KafkaRequestParseError::MissingData;
 
 #[derive(Debug)]
 pub struct KafkaRequest {
@@ -18,37 +19,23 @@ impl KafkaRequest {
     pub fn correlation_id(&self) -> i32 {
         self.correlation_id
     }
-}
 
-#[derive(Debug, Error)]
-pub enum KafkaRequestParseError {
-    #[error("Missing data, received insufficient bytes of length: {0}")]
-    MissingData(usize),
-    #[error("Failed to parse bytes")]
-    ByteParseError(#[from] TryFromSliceError),
-    #[error("Invalid Api Key requested: {0}")]
-    InvalidApiKey(#[from] ParseApiKeyError),
-}
+    pub fn try_from<T: Read>(buf_reader: &mut BufReader<T>) -> Result<Self, KafkaRequestParseError> {
+        let mut bytes = [0; size_of::<i32>()];
+        buf_reader.read(&mut bytes).map_err(|_| MissingData(size_of::<i32>()))?;
+        let message_size = i32::from_be_bytes(bytes);
 
-impl TryFrom<&[u8]> for KafkaRequest {
-    type Error = KafkaRequestParseError;
+        let mut bytes = [0; size_of::<i16>()];
+        buf_reader.read(&mut bytes).map_err(|_| MissingData(size_of::<i16>()))?;
+        let api_key = i16::from_be_bytes(bytes).try_into()?;
 
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        if value.len() < 12 {
-            return Err(KafkaRequestParseError::MissingData(value.len()));
-        }
+        let mut bytes = [0; size_of::<i16>()];
+        buf_reader.read(&mut bytes).map_err(|_| MissingData(size_of::<i16>()))?;
+        let api_version = i16::from_be_bytes(bytes);
 
-        let (int_bytes, rest) = value.split_at(size_of::<i32>());
-        let message_size = i32::from_be_bytes(int_bytes.try_into()?);
-
-        let (int_bytes, rest) = rest.split_at(size_of::<i16>());
-        let api_key = i16::from_be_bytes(int_bytes.try_into()?).try_into()?;
-
-        let (int_bytes, rest) = rest.split_at(size_of::<i16>());
-        let api_version = i16::from_be_bytes(int_bytes.try_into()?);
-
-        let (int_bytes, _) = rest.split_at(size_of::<i32>());
-        let correlation_id = i32::from_be_bytes(int_bytes.try_into()?);
+        let mut bytes = [0; size_of::<i32>()];
+        buf_reader.read(&mut bytes).map_err(|_| MissingData(size_of::<i32>()))?;
+        let correlation_id = i32::from_be_bytes(bytes);
 
         Ok(KafkaRequest {
             message_size,
@@ -57,6 +44,14 @@ impl TryFrom<&[u8]> for KafkaRequest {
             correlation_id,
         })
     }
+}
+
+#[derive(Debug, Error)]
+pub enum KafkaRequestParseError {
+    #[error("Missing data, received insufficient bytes, fewer than: {0}")]
+    MissingData(usize),
+    #[error("Invalid Api Key requested: {0}")]
+    InvalidApiKey(#[from] ParseApiKeyError),
 }
 
 #[derive(Debug)]

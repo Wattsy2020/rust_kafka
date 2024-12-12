@@ -1,5 +1,4 @@
 use crate::serialisation::ToKafkaBytes;
-use std::iter;
 
 pub struct VarInt(u32);
 
