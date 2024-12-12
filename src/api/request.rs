@@ -21,27 +21,23 @@ impl KafkaRequest {
     }
 
     pub fn try_from<T: Read>(buf_reader: &mut BufReader<T>) -> Result<Self, KafkaRequestParseError> {
-        let mut bytes = [0; size_of::<i32>()];
-        buf_reader.read(&mut bytes).map_err(|_| MissingData(size_of::<i32>()))?;
-        let message_size = i32::from_be_bytes(bytes);
+        fn read_i32<T: Read>(buf_reader: &mut BufReader<T>) -> Result<i32, KafkaRequestParseError> {
+            let mut bytes = [0; size_of::<i32>()];
+            buf_reader.read(&mut bytes).map_err(|_| MissingData(size_of::<i32>()))?;
+            Ok(i32::from_be_bytes(bytes))
+        }
 
-        let mut bytes = [0; size_of::<i16>()];
-        buf_reader.read(&mut bytes).map_err(|_| MissingData(size_of::<i16>()))?;
-        let api_key = i16::from_be_bytes(bytes).try_into()?;
-
-        let mut bytes = [0; size_of::<i16>()];
-        buf_reader.read(&mut bytes).map_err(|_| MissingData(size_of::<i16>()))?;
-        let api_version = i16::from_be_bytes(bytes);
-
-        let mut bytes = [0; size_of::<i32>()];
-        buf_reader.read(&mut bytes).map_err(|_| MissingData(size_of::<i32>()))?;
-        let correlation_id = i32::from_be_bytes(bytes);
+        fn read_i16<T: Read>(buf_reader: &mut BufReader<T>) -> Result<i16, KafkaRequestParseError> {
+            let mut bytes = [0; size_of::<i16>()];
+            buf_reader.read(&mut bytes).map_err(|_| MissingData(size_of::<i16>()))?;
+            Ok(i16::from_be_bytes(bytes))
+        }
 
         Ok(KafkaRequest {
-            message_size,
-            api_key,
-            api_version,
-            correlation_id,
+            message_size: read_i32(buf_reader)?,
+            api_key: read_i16(buf_reader)?.try_into()?,
+            api_version: read_i16(buf_reader)?,
+            correlation_id: read_i32(buf_reader)?,
         })
     }
 }
