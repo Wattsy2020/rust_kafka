@@ -6,4 +6,4 @@
 #
 # Learn more: https://codecrafters.io/program-interface
 
-exec /tmp/codecrafters-build-kafka-rust/release/codecrafters-kafka "$@"
+exec /tmp/codecrafters-build-kafka-rust/release/codecrafters-kafka "$@" --bin codecrafters-kafka-rust
