@@ -1,6 +1,7 @@
-use crate::serialisation::ToKafkaBytes;
 use std::io::{BufReader, Read};
 use thiserror::Error;
+use crate::api::api_key::{ApiKey, ParseApiKeyError};
+use crate::api::correlation_id::CorrelationId;
 use crate::api::request::KafkaRequestParseError::MissingData;
 
 #[derive(Debug)]
@@ -8,7 +9,7 @@ pub struct KafkaRequest {
     message_size: i32,
     api_key: ApiKey,
     api_version: i16,
-    correlation_id: i32,
+    correlation_id: CorrelationId,
 }
 
 impl KafkaRequest {
@@ -16,9 +17,7 @@ impl KafkaRequest {
         self.api_version
     }
 
-    pub fn correlation_id(&self) -> i32 {
-        self.correlation_id
-    }
+    pub fn correlation_id(&self) -> CorrelationId { self.correlation_id }
 
     pub fn try_from<T: Read>(buf_reader: &mut BufReader<T>) -> Result<Self, KafkaRequestParseError> {
         fn read_i32<T: Read>(buf_reader: &mut BufReader<T>) -> Result<i32, KafkaRequestParseError> {
@@ -36,7 +35,7 @@ impl KafkaRequest {
         let message_size = read_i32(buf_reader)?;
         let api_key = read_i16(buf_reader)?.try_into()?;
         let api_version = read_i16(buf_reader)?;
-        let correlation_id = read_i32(buf_reader)?;
+        let correlation_id = read_i32(buf_reader)?.into();
 
         // eventually should read the body, for now ignore the remaining body
         let expected_num_bytes = message_size as usize - 8;
@@ -59,41 +58,4 @@ pub enum KafkaRequestParseError {
     MissingData(usize),
     #[error("Invalid Api Key requested: {0}")]
     InvalidApiKey(#[from] ParseApiKeyError),
-}
-
-#[derive(Debug)]
-pub enum ApiKey {
-    Produce,
-    Fetch,
-    ApiVersions,
-}
-
-#[derive(Error, Debug)]
-pub enum ParseApiKeyError {
-    #[error("Invalid Api Key: {0}")]
-    InvalidKey(i16),
-}
-
-impl ToKafkaBytes for ApiKey {
-    fn to_kafka_bytes(self) -> impl IntoIterator<Item = u8> {
-        let int_repr: i16 = match self {
-            ApiKey::Produce => 0,
-            ApiKey::Fetch => 1,
-            ApiKey::ApiVersions => 18,
-        };
-        int_repr.to_kafka_bytes()
-    }
-}
-
-impl TryFrom<i16> for ApiKey {
-    type Error = ParseApiKeyError;
-
-    fn try_from(value: i16) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(ApiKey::Produce),
-            1 => Ok(ApiKey::Fetch),
-            18 => Ok(ApiKey::ApiVersions),
-            _ => Err(ParseApiKeyError::InvalidKey(value)),
-        }
-    }
 }

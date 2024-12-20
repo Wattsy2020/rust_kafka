@@ -1,5 +1,6 @@
 use super::response::BaseKafkaResponse;
-use crate::api::request::{ApiKey, KafkaRequest};
+use crate::api::request::KafkaRequest;
+use crate::api::api_key::ApiKey;
 use crate::serialisation::ToKafkaBytes;
 
 #[derive(Debug)]

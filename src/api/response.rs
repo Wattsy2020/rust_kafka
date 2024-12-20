@@ -1,9 +1,10 @@
+use crate::api::correlation_id::CorrelationId;
 use super::request::KafkaRequest;
 use crate::serialisation::ToKafkaBytes;
 
 #[derive(Debug)]
 pub struct BaseKafkaResponse {
-    correlation_id: i32,
+    correlation_id: CorrelationId,
 }
 
 impl BaseKafkaResponse {
