@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, thread};
 use std::io::{BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 use crate::api::api_versions::ApiVersionsResponse;
@@ -21,10 +21,12 @@ impl Server {
             match stream {
                 Ok(stream) => {
                     println!("Received new request");
-                    self.handle_connection(stream);
+                    thread::spawn(|| Server::handle_connection(stream));
+                    // note this doesn't have graceful shutdown.
+                    // the server could be shutdown, and in progress requests might not be handled
                 }
                 Err(e) => {
-                    println!("error: {}", e);
+                    eprintln!("error: {}", e);
                 }
             }
         }
@@ -32,7 +34,7 @@ impl Server {
 
     /// Read a KafkaRequest and send response
     /// until the Kafka Request from the connection is invalid / missing
-    fn handle_connection(&self, mut stream: TcpStream) {
+    fn handle_connection(mut stream: TcpStream) {
         loop {
             println!("Waiting to parse request");
             let mut buf_reader = BufReader::new(&stream);
