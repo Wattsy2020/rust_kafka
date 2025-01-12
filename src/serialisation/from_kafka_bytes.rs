@@ -8,6 +8,14 @@ pub trait ReadKafkaBytes: Sized {
     async fn read_kafka_bytes<T: AsyncRead + Unpin>(reader: &mut T) -> Result<Self, KafkaRequestParseError>;
 }
 
+impl ReadKafkaBytes for u8 {
+    async fn read_kafka_bytes<T: AsyncRead + Unpin>(reader: &mut T) -> Result<Self, KafkaRequestParseError> {
+        reader.read_u8()
+            .await
+            .map_err(|_| MissingData(size_of::<u8>()))
+    }
+}
+
 impl ReadKafkaBytes for i16 {
     async fn read_kafka_bytes<T: AsyncRead + Unpin>(reader: &mut T) -> Result<Self, KafkaRequestParseError> {
         reader.read_i16()
