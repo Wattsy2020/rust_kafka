@@ -5,7 +5,7 @@ use crate::api::api_key::{ApiKey, ParseApiKeyError};
 use crate::api::api_versions::ApiVersionsRequest;
 use crate::api::correlation_id::CorrelationId;
 use crate::api::request::KafkaRequestParseError::MissingData;
-use crate::serialisation::from_kafka_bytes::ReadKafkaBytes;
+use crate::serialisation::ReadKafkaBytes;
 use crate::serialisation::nullable_string::NullableString;
 
 #[derive(Debug)]

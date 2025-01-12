@@ -1,7 +1,6 @@
 use tokio::io::AsyncRead;
 use crate::api::request::KafkaRequestParseError;
-use crate::serialisation::from_kafka_bytes::ReadKafkaBytes;
-use crate::serialisation::ToKafkaBytes;
+use crate::serialisation::{ReadKafkaBytes, ToKafkaBytes};
 
 #[derive(Debug, Copy, Clone)]
 pub struct CorrelationId(i32);
