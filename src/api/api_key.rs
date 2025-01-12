@@ -6,6 +6,7 @@ pub enum ApiKey {
     Produce,
     Fetch,
     ApiVersions,
+    DescribeTopicPartitions
 }
 
 #[derive(Error, Debug)]
@@ -20,6 +21,7 @@ impl ToKafkaBytes for ApiKey {
             ApiKey::Produce => 0,
             ApiKey::Fetch => 1,
             ApiKey::ApiVersions => 18,
+            ApiKey::DescribeTopicPartitions => 75
         };
         int_repr.to_kafka_bytes()
     }

@@ -22,11 +22,18 @@ impl ApiVersionsResponse {
         let api_keys = match error_code {
             ApiVersionsErrorCode::UnsupportedVersion => Vec::new(),
             // in future this shouldn't be hardcoded
-            ApiVersionsErrorCode::NoError => vec![ApiVersionInfo {
-                api_key: ApiKey::ApiVersions,
-                min_version: 0,
-                max_version: 4,
-            }],
+            ApiVersionsErrorCode::NoError => vec![
+                ApiVersionInfo {
+                    api_key: ApiKey::ApiVersions,
+                    min_version: 0,
+                    max_version: 4,
+                },
+                ApiVersionInfo {
+                    api_key: ApiKey::DescribeTopicPartitions,
+                    min_version: 0,
+                    max_version: 0
+                }
+            ],
         };
         ApiVersionsResponse {
             base_response,
