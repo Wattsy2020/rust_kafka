@@ -1,6 +1,8 @@
 use crate::serialisation::varint::VarInt;
 
 pub mod varint;
+pub mod nullable_string;
+pub mod from_kafka_bytes;
 
 /// Types that can be serialised and used in the Kafka API
 pub trait ToKafkaBytes {

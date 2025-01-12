@@ -1,8 +1,11 @@
+use std::string::FromUtf8Error;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt};
 use crate::api::api_key::{ApiKey, ParseApiKeyError};
 use crate::api::correlation_id::CorrelationId;
 use crate::api::request::KafkaRequestParseError::MissingData;
+use crate::serialisation::from_kafka_bytes::ReadKafkaBytes;
+use crate::serialisation::nullable_string::NullableString;
 
 #[derive(Debug)]
 pub struct KafkaRequest {
@@ -10,6 +13,7 @@ pub struct KafkaRequest {
     api_key: ApiKey,
     api_version: i16,
     correlation_id: CorrelationId,
+    client_id: NullableString
 }
 
 impl KafkaRequest {
@@ -20,35 +24,26 @@ impl KafkaRequest {
     pub fn correlation_id(&self) -> CorrelationId { self.correlation_id }
 
     pub async fn try_read_from<T: AsyncRead + Unpin>(reader: &mut T) -> Result<Self, KafkaRequestParseError> {
-        let message_size = reader.read_i32()
-            .await
-            .map_err(|_| MissingData(size_of::<i32>()))?;
-        let api_key = reader.read_i16()
-            .await
-            .map_err(|_| MissingData(size_of::<i16>()))?
-            .try_into()?;
-        let api_version = reader.read_i16()
-            .await
-            .map_err(|_| MissingData(size_of::<i16>()))?;
-        let correlation_id = reader.read_i32()
-            .await
-            .map_err(|_| MissingData(size_of::<i32>()))?
-            .into();
+        let message_size = i32::read_kafka_bytes(reader).await?;
+        let api_key = ApiKey::read_kafka_bytes(reader).await?;
+        let api_version = i16::read_kafka_bytes(reader).await?;
+        let correlation_id = CorrelationId::read_kafka_bytes(reader).await?;
+        let client_id = NullableString::read_kafka_bytes(reader).await?;
+        reader.read_u8().await.map_err(|_| MissingData(1))?; // ignore the tag buffer for now
 
         // eventually should read the body, for now ignore the remaining body
-        // note `message_size` doesn't include itself, does include the 8 bytes of api_key, version, and correlation_id
-        let expected_num_bytes = message_size as usize - 8;
-        let mut body_bytes = vec![0; expected_num_bytes];
-        reader.read_exact(&mut body_bytes)
+        let mut body_bytes = [0; 1000];
+        let num_bytes_read = reader.read(&mut body_bytes)
             .await
-            .map_err(|_| MissingData(expected_num_bytes))?;
-        println!("Read body of {} bytes", body_bytes.len());
+            .map_err(|_| MissingData(message_size as usize))?;
+        println!("Read body of {} bytes", num_bytes_read);
 
         Ok(KafkaRequest {
             message_size,
             api_key,
             api_version,
             correlation_id,
+            client_id
         })
     }
 }
@@ -59,4 +54,8 @@ pub enum KafkaRequestParseError {
     MissingData(usize),
     #[error("Invalid Api Key requested: {0}")]
     InvalidApiKey(#[from] ParseApiKeyError),
+    #[error("Invalid String Length: {0}")]
+    InvalidStringLength(i32),
+    #[error("Invalid String: {0}")]
+    InvalidString(#[from] FromUtf8Error)
 }
