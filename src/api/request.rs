@@ -2,6 +2,7 @@ use std::string::FromUtf8Error;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt};
 use crate::api::api_key::{ApiKey, ParseApiKeyError};
+use crate::api::api_versions::ApiVersionsRequest;
 use crate::api::correlation_id::CorrelationId;
 use crate::api::request::KafkaRequestParseError::MissingData;
 use crate::serialisation::from_kafka_bytes::ReadKafkaBytes;
@@ -13,7 +14,13 @@ pub struct KafkaRequest {
     api_key: ApiKey,
     api_version: i16,
     correlation_id: CorrelationId,
-    client_id: NullableString
+    client_id: NullableString,
+    api_request: ApiRequest
+}
+
+#[derive(Debug)]
+pub enum ApiRequest {
+    ApiVersions(ApiVersionsRequest)
 }
 
 impl KafkaRequest {
@@ -31,19 +38,18 @@ impl KafkaRequest {
         let client_id = NullableString::read_kafka_bytes(reader).await?;
         reader.read_u8().await.map_err(|_| MissingData(1))?; // ignore the tag buffer for now
 
-        // eventually should read the body, for now ignore the remaining body
-        let mut body_bytes = [0; 1000];
-        let num_bytes_read = reader.read(&mut body_bytes)
-            .await
-            .map_err(|_| MissingData(message_size as usize))?;
-        println!("Read body of {} bytes", num_bytes_read);
+        let api_request = match api_key {
+            ApiKey::DescribeTopicPartitions => { todo!("parse things")},
+            _ => ApiRequest::ApiVersions(ApiVersionsRequest{})
+        };
 
         Ok(KafkaRequest {
             message_size,
             api_key,
             api_version,
             correlation_id,
-            client_id
+            client_id,
+            api_request
         })
     }
 }

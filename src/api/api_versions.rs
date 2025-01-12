@@ -3,6 +3,10 @@ use crate::api::request::KafkaRequest;
 use crate::api::api_key::ApiKey;
 use crate::serialisation::ToKafkaBytes;
 
+/// Dummy struct for now, we could later handle the parameters of the ApiVersions API
+#[derive(Debug)]
+pub struct ApiVersionsRequest;
+
 #[derive(Debug)]
 pub struct ApiVersionsResponse {
     base_response: BaseKafkaResponse,
